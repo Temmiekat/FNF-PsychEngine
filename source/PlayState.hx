@@ -96,6 +96,7 @@ class PlayState extends MusicBeatState
 	public var modchartSounds:Map<String, FlxSound> = new Map<String, FlxSound>();
 	public var modchartTexts:Map<String, ModchartText> = new Map<String, ModchartText>();
 	public var modchartSaves:Map<String, FlxSave> = new Map<String, FlxSave>();
+	public var lDance:Bool = false;
 
 	//event variables
 	private var isCameraOnForcedPos:Bool = false;
@@ -4859,6 +4860,15 @@ class PlayState extends MusicBeatState
 
 		iconP1.scale.set(1.2, 1.2);
 		iconP2.scale.set(1.2, 1.2);
+
+		lDance = !lDance; // true > false; false > true
+
+		// booping heads. Actually inspired by vs Cassette Girl mod
+		if (lDance){
+			iconP1.angle = 8; iconP2.angle = 8; // maybe i should do it with tweens, but i'm lazy // i'll make it in -1.0.0, i promise
+		} else { 
+			iconP1.angle = -8; iconP2.angle = -8;
+		}
 
 		iconP1.updateHitbox();
 		iconP2.updateHitbox();
