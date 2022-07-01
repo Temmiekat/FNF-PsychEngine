@@ -1,0 +1,25 @@
+{
+	"storyName": "Kind-Stranger",
+	"hideFreeplay": false,
+	"weekBackground": "sink",
+	"weekBefore": "",
+	"startUnlocked": true,
+	"weekCharacters": [
+		"",
+		"",
+		""
+	],
+	"songs": [
+		[
+			"bloxxin-breakdown",
+			"sink_icons",
+			[
+				0,
+				113,
+				73
+			]
+		]
+	],
+	"hideStoryMode": false,
+	"weekName": ""
+}

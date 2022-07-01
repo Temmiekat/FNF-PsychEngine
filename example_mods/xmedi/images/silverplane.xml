@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<TextureAtlas imagePath="silverplane.png"><SubTexture name="silverplane flying0000" x="0" y="0" width="420" height="194" frameX="0" frameY="0" frameWidth="420" frameHeight="194" />
+<SubTexture name="silverplane flying0001" x="0" y="194" width="412" height="194" frameX="0" frameY="0" frameWidth="420" frameHeight="194" />
+<SubTexture name="silverplane flying0002" x="420" y="0" width="397" height="194" frameX="0" frameY="0" frameWidth="420" frameHeight="194" />
+<SubTexture name="silverplane flying0003" x="0" y="388" width="409" height="194" frameX="0" frameY="0" frameWidth="420" frameHeight="194" />
+</TextureAtlas>

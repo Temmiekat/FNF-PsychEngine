@@ -40,6 +40,14 @@ class VisualsUISubState extends BaseOptionsMenu
 			'bool',
 			true);
 		addOption(option);
+		
+		var option:Option = new Option('Note Skin',
+			"What note skin do you prefer for playing?",
+			'noteSkinSettings',
+			'string',
+			'Classic',
+			['Classic', 'PurPals']);
+		addOption(option);
 
 		var option:Option = new Option('Hide HUD',
 			'If checked, hides most HUD elements.',

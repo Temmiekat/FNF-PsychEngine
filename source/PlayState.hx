@@ -59,7 +59,11 @@ import StageData;
 import FunkinLua;
 import DialogueBoxPsych;
 import Conductor.Rating;
+import hscript.Interp;
+import hscript.Parser;
+import HscriptHandler;
 #if sys
+import sys.io.File;
 import sys.FileSystem;
 #end
 
@@ -288,6 +292,7 @@ class PlayState extends MusicBeatState
 	// Lua shit
 	public static var instance:PlayState;
 	public var luaArray:Array<FunkinLua> = [];
+	public var hscriptArray:Map<String, Interp> = []; // it should work like luaarray. String is tag and interp is actual hscript interp
 	private var luaDebugGroup:FlxTypedGroup<DebugLuaText>;
 	public var introSoundsSuffix:String = '';
 
@@ -303,7 +308,6 @@ class PlayState extends MusicBeatState
 	override public function create()
 	{
 		Paths.clearStoredMemory();
-
 		// for lua
 		instance = this;
 
@@ -857,6 +861,19 @@ class PlayState extends MusicBeatState
 					{
 						luaArray.push(new FunkinLua(folder + file));
 						filesPushed.push(file);
+					} else if (file.endsWith('.hx') && !filesPushed.contains(file)) {
+						var exparser = new Parser();
+						exparser.allowMetadata = true;
+						exparser.allowTypes = true;
+						var parsedstring = exparser.parseString(File.getContent(folder + file));
+						var interp = new Interp();
+						interp = HscriptHandler.setVars(interp);
+						//var interp = HscriptHandler.createInterpWithVars();
+
+						interp.execute(parsedstring);
+						hscriptArray.set(folder + file,interp);
+						filesPushed.push(file);
+						trace('HScript file loaded: ' + folder + file);
 					}
 				}
 			}
@@ -1229,6 +1246,19 @@ class PlayState extends MusicBeatState
 					{
 						luaArray.push(new FunkinLua(folder + file));
 						filesPushed.push(file);
+					} else if (file.endsWith('.hx') && !filesPushed.contains(file)) {
+						var exparser = new Parser();
+						exparser.allowMetadata = true;
+						exparser.allowTypes = true;
+						var parsedstring = exparser.parseString(File.getContent(folder + file));
+						var interp = new Interp();
+						interp = HscriptHandler.setVars(interp);
+						//var interp = HscriptHandler.createInterpWithVars();
+
+						interp.execute(parsedstring);
+						hscriptArray.set(folder + file, interp);
+						filesPushed.push(file);
+						trace('HScript file loaded: ' + folder + file);
 					}
 				}
 			}
@@ -1336,6 +1366,7 @@ class PlayState extends MusicBeatState
 
 		Conductor.safeZoneOffset = (ClientPrefs.safeFrames / 60) * 1000;
 		callOnLuas('onCreatePost', []);
+		callOnHScripts('create', []);
 
 		super.create();
 
@@ -2733,6 +2764,7 @@ class PlayState extends MusicBeatState
 			iconP1.swapOldIcon();
 		}*/
 		callOnLuas('onUpdate', [elapsed]);
+		callOnHScripts('update', [elapsed]);
 
 		switch (curStage)
 		{
@@ -4166,6 +4198,8 @@ class PlayState extends MusicBeatState
 					callOnLuas('onGhostTap', [key]);
 					if (canMiss) {
 						noteMissPress(key);
+						callOnLuas('noteMissPress', [key]);
+						callOnHScripts('noteMissPress', [key]);
 					}
 				}
 
@@ -4304,6 +4338,7 @@ class PlayState extends MusicBeatState
 	}
 
 	function noteMiss(daNote:Note):Void { //You didn't hit the key and let it go offscreen, also used by Hurt Notes
+		callOnHScripts('noteMiss', [notes.members.indexOf(daNote), daNote.noteData, daNote.noteType, daNote.isSustainNote, daNote.ID]);
 		//Dupe note remove
 		notes.forEachAlive(function(note:Note) {
 			if (daNote != note && daNote.mustPress && daNote.noteData == note.noteData && daNote.isSustainNote == note.isSustainNote && Math.abs(daNote.strumTime - note.strumTime) < 1) {
@@ -4342,6 +4377,7 @@ class PlayState extends MusicBeatState
 		}
 
 		callOnLuas('noteMiss', [notes.members.indexOf(daNote), daNote.noteData, daNote.noteType, daNote.isSustainNote, daNote.ID]);
+		callOnHScripts('noteMiss', [notes.members.indexOf(daNote), daNote.noteData, daNote.noteType, daNote.isSustainNote, daNote.ID]);
 	}
 
 	function noteMissPress(direction:Int = 1):Void //You pressed a key when there was no notes to press for this key
@@ -4432,6 +4468,7 @@ class PlayState extends MusicBeatState
 		StrumPlayAnim(true, Std.int(Math.abs(note.noteData)) % 4, time);
 		note.hitByOpponent = true;
 
+		callOnLuas('opponentNoteHit', [notes.members.indexOf(note), Math.abs(note.noteData), note.noteType, note.isSustainNote, note.ID]);
 		callOnLuas('opponentNoteHit', [notes.members.indexOf(note), Math.abs(note.noteData), note.noteType, note.isSustainNote, note.ID]);
 
 		if (!note.isSustainNote)
@@ -4542,6 +4579,7 @@ class PlayState extends MusicBeatState
 			var leData:Int = Math.round(Math.abs(note.noteData));
 			var leType:String = note.noteType;
 			callOnLuas('goodNoteHit', [notes.members.indexOf(note), leData, leType, isSus, note.ID]);
+			callOnHScripts('opponentNoteHit', [notes.members.indexOf(note), Math.abs(note.noteData), note.noteType, note.isSustainNote, note.ID]);
 
 			if (!note.isSustainNote)
 			{
@@ -4896,6 +4934,26 @@ class PlayState extends MusicBeatState
 
 		setOnLuas('curBeat', curBeat); //DAWGG?????
 		callOnLuas('onBeatHit', []);
+		callOnHScripts('beatHit', [curBeat]);
+	}
+
+	function callSingleHScript(func:String, args:Array<Dynamic>, filename:String) {
+		if (!hscriptArray.get(filename).variables.exists(func)) {
+			trace("I can't find function with name: " + func);
+			return;
+		}
+		var method = hscriptArray.get(filename).variables.get(func);
+		if (args.length == 0) {
+			method();
+		} else if (args.length == 1) {
+			method(args[0]);
+		}
+	}
+
+	function callOnHScripts(func:String, args:Array<Dynamic>) {
+		for (i in hscriptArray.keys()) {
+			callSingleHScript(func, args, i);	// it could be easier ig
+		}
 	}
 
 	override function sectionHit()
@@ -4929,6 +4987,7 @@ class PlayState extends MusicBeatState
 		
 		setOnLuas('curSection', curSection);
 		callOnLuas('onSectionHit', []);
+		callOnHScripts('sectionHit', [curSection]);
 	}
 
 	public function callOnLuas(event:String, args:Array<Dynamic>, ignoreStops = true, exclusions:Array<String> = null):Dynamic {
